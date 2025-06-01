@@ -32,6 +32,9 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   specialty: varchar("specialty"),
   role: varchar("role").default("doctor"),
+  hospital: varchar("hospital"),
+  department: varchar("department"),
+  bio: text("bio"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -44,8 +47,16 @@ export const cases = pgTable("cases", {
   authorId: varchar("author_id").notNull().references(() => users.id),
   specialty: varchar("specialty").notNull(),
   status: varchar("status").default("active"), // active, resolved, review
+  priority: varchar("priority").default("normal"), // low, normal, high, urgent
+  patientAge: varchar("patient_age"),
+  patientGender: varchar("patient_gender"),
+  diagnosis: text("diagnosis"),
+  treatment: text("treatment"),
+  outcome: text("outcome"),
   tags: text("tags").array().default([]),
   attachments: text("attachments").array().default([]),
+  viewCount: serial("view_count"),
+  featured: boolean("featured").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

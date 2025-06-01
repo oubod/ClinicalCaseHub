@@ -64,7 +64,7 @@ export class DatabaseStorage implements IStorage {
     tags?: string[];
     search?: string;
   }): Promise<CaseWithAuthor[]> {
-    let query = db
+    const query = db
       .select({
         id: cases.id,
         title: cases.title,
@@ -72,8 +72,16 @@ export class DatabaseStorage implements IStorage {
         authorId: cases.authorId,
         specialty: cases.specialty,
         status: cases.status,
+        priority: cases.priority,
+        patientAge: cases.patientAge,
+        patientGender: cases.patientGender,
+        diagnosis: cases.diagnosis,
+        treatment: cases.treatment,
+        outcome: cases.outcome,
         tags: cases.tags,
         attachments: cases.attachments,
+        viewCount: cases.viewCount,
+        featured: cases.featured,
         createdAt: cases.createdAt,
         updatedAt: cases.updatedAt,
         author: {
@@ -84,6 +92,9 @@ export class DatabaseStorage implements IStorage {
           profileImageUrl: users.profileImageUrl,
           specialty: users.specialty,
           role: users.role,
+          hospital: users.hospital,
+          department: users.department,
+          bio: users.bio,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         },
@@ -107,7 +118,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await query.where(and(...conditions));
     }
 
     return await query;
@@ -122,8 +133,16 @@ export class DatabaseStorage implements IStorage {
         authorId: cases.authorId,
         specialty: cases.specialty,
         status: cases.status,
+        priority: cases.priority,
+        patientAge: cases.patientAge,
+        patientGender: cases.patientGender,
+        diagnosis: cases.diagnosis,
+        treatment: cases.treatment,
+        outcome: cases.outcome,
         tags: cases.tags,
         attachments: cases.attachments,
+        viewCount: cases.viewCount,
+        featured: cases.featured,
         createdAt: cases.createdAt,
         updatedAt: cases.updatedAt,
         author: {
@@ -134,6 +153,9 @@ export class DatabaseStorage implements IStorage {
           profileImageUrl: users.profileImageUrl,
           specialty: users.specialty,
           role: users.role,
+          hospital: users.hospital,
+          department: users.department,
+          bio: users.bio,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         },
@@ -185,6 +207,9 @@ export class DatabaseStorage implements IStorage {
           profileImageUrl: users.profileImageUrl,
           specialty: users.specialty,
           role: users.role,
+          hospital: users.hospital,
+          department: users.department,
+          bio: users.bio,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         },
@@ -212,6 +237,9 @@ export class DatabaseStorage implements IStorage {
           profileImageUrl: users.profileImageUrl,
           specialty: users.specialty,
           role: users.role,
+          hospital: users.hospital,
+          department: users.department,
+          bio: users.bio,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         },
