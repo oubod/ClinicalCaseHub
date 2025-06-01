@@ -8,6 +8,10 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
+import MyCases from "@/pages/my-cases";
+import Featured from "@/pages/featured";
+import Colleagues from "@/pages/colleagues";
+import Notifications from "@/pages/notifications";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -19,6 +23,10 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Home} />
+          <Route path="/my-cases" component={MyCases} />
+          <Route path="/featured" component={Featured} />
+          <Route path="/colleagues" component={Colleagues} />
+          <Route path="/notifications" component={Notifications} />
         </>
       )}
       <Route component={NotFound} />

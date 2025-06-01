@@ -1,16 +1,17 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Stethoscope, Home, FileText, Users, Star, Search, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 export default function Sidebar() {
   const { user } = useAuth();
+  const [location, setLocation] = useLocation();
 
   const menuItems = [
-    { icon: Home, label: "Dashboard", href: "/", active: true },
+    { icon: Home, label: "Dashboard", href: "/" },
     { icon: FileText, label: "My Cases", href: "/my-cases" },
     { icon: Users, label: "Colleagues", href: "/colleagues" },
     { icon: Star, label: "Featured Cases", href: "/featured" },
-    { icon: Search, label: "Search Cases", href: "/search" },
     { icon: Bell, label: "Notifications", href: "/notifications", badge: 3 },
   ];
 
@@ -34,12 +35,13 @@ export default function Sidebar() {
         {menuItems.map((item) => (
           <Button
             key={item.label}
-            variant={item.active ? "default" : "ghost"}
+            variant={location === item.href ? "default" : "ghost"}
             className={`w-full justify-start ${
-              item.active 
+              location === item.href
                 ? "bg-medical-blue text-white hover:bg-medical-blue-dark" 
                 : "text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground hover:bg-slate-50 dark:hover:bg-muted"
             }`}
+            onClick={() => setLocation(item.href)}
           >
             <item.icon className="w-5 h-5 mr-3" />
             <span>{item.label}</span>

@@ -38,6 +38,12 @@ const createCaseSchema = insertCaseSchema.extend({
   title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
   description: z.string().min(1, "Description is required").max(5000, "Description must be less than 5000 characters"),
   specialty: z.string().min(1, "Specialty is required"),
+  priority: z.string().default("normal"),
+  patientAge: z.string().optional(),
+  patientGender: z.string().optional(),
+  diagnosis: z.string().optional(),
+  treatment: z.string().optional(),
+  outcome: z.string().optional(),
   tags: z.array(z.string()).default([]),
 });
 
