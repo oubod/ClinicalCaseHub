@@ -1,256 +1,221 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { insertCaseSchema } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
-import { z } from "zod";
-
-const createCaseSchema = insertCaseSchema.extend({
-  title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
-  description: z.string().min(1, "Description is required").max(5000, "Description must be less than 5000 characters"),
-  specialty: z.string().min(1, "Specialty is required"),
-  priority: z.string().default("normal"),
-  patientAge: z.string().optional(),
-  patientGender: z.string().optional(),
-  diagnosis: z.string().optional(),
-  treatment: z.string().optional(),
-  outcome: z.string().optional(),
-  tags: z.array(z.string()).default([]),
-});
+import { insertCaseSchema } from "../shared/schema";
+import type { z } from "zod";
 
 interface CreateCaseModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: z.infer<typeof insertCaseSchema>) => void;
 }
 
-const specialties = [
-  "Cardiology",
-  "Neurology", 
-  "Orthopedics",
-  "Emergency Medicine",
-  "Pediatrics",
-  "Radiology",
-  "Surgery",
-  "Internal Medicine",
-  "Oncology",
-  "Dermatology",
-  "Psychiatry",
-  "Ophthalmology",
-];
+export function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCaseModalProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [status, setStatus] = useState<"active" | "resolved" | "review">("active");
+  const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [patientAge, setPatientAge] = useState("");
+  const [patientGender, setPatientGender] = useState<"male" | "female" | "other">("male");
+  const [currentTag, setCurrentTag] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<Array<{ url: string; type: string; name: string; size: number }>>([]);
 
-export default function CreateCaseModal({ open, onOpenChange }: CreateCaseModalProps) {
-  const [newTag, setNewTag] = useState("");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      title,
+      description,
+      specialty,
+      status,
+      priority,
+      patientAge,
+      patientGender,
+      tags,
+      attachments
+    });
+  };
 
-  const form = useForm<z.infer<typeof createCaseSchema>>({
-    resolver: zodResolver(createCaseSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      specialty: "",
-      priority: "normal",
-      patientAge: "",
-      patientGender: "",
-      diagnosis: "",
-      treatment: "",
-      outcome: "",
-      status: "active",
-      tags: [],
-      attachments: [],
-    },
-  });
-
-  const createCaseMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof createCaseSchema>) => {
-      await apiRequest("POST", "/api/cases", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      toast({
-        title: "Success",
-        description: "Case created successfully!",
-      });
-      form.reset();
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to create case. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const addTag = () => {
-    if (newTag.trim() && !form.getValues("tags").includes(newTag.trim())) {
-      const currentTags = form.getValues("tags");
-      form.setValue("tags", [...currentTags, newTag.trim()]);
-      setNewTag("");
+  const handleAddTag = () => {
+    if (currentTag.trim() && !tags.includes(currentTag.trim())) {
+      setTags([...tags, currentTag.trim()]);
+      setCurrentTag("");
     }
   };
 
-  const removeTag = (tagToRemove: string) => {
-    const currentTags = form.getValues("tags");
-    form.setValue("tags", currentTags.filter(tag => tag !== tagToRemove));
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  const onSubmit = (data: z.infer<typeof createCaseSchema>) => {
-    createCaseMutation.mutate(data);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    // In a real app, you would upload these files to a storage service
+    // and get back URLs. This is just a mock implementation.
+    const newAttachments = Array.from(files).map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type,
+      name: file.name,
+      size: file.size
+    }));
+
+    setAttachments([...attachments, ...newAttachments]);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Create New Clinical Case</DialogTitle>
+          <DialogTitle>Create New Case</DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Case Title</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Brief, descriptive title for the case"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium mb-2">Title</label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter case title"
+              required
             />
+          </div>
 
-            <FormField
-              control={form.control}
-              name="specialty"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Medical Specialty</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select primary specialty" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {specialties.map((specialty) => (
-                        <SelectItem key={specialty} value={specialty}>
-                          {specialty}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div>
+            <label className="block text-sm font-medium mb-2">Description</label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the case"
+              required
+              className="min-h-[150px]"
             />
+          </div>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Case Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Detailed description of the case, patient presentation, findings, and questions for discussion..."
-                      rows={8}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div>
+            <label className="block text-sm font-medium mb-2">Specialty</label>
+            <Input
+              value={specialty}
+              onChange={(e) => setSpecialty(e.target.value)}
+              placeholder="Enter medical specialty"
+              required
             />
+          </div>
 
-            <div className="space-y-3">
-              <FormLabel>Tags</FormLabel>
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Add tag"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                />
-                <Button type="button" onClick={addTag} variant="outline">
-                  Add
-                </Button>
-              </div>
-              {form.watch("tags").length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {form.watch("tags").map((tag) => (
-                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <X
-                        className="w-3 h-3 cursor-pointer hover:text-red-600"
-                        onClick={() => removeTag(tag)}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={createCaseMutation.isPending}
-                className="bg-medical-blue hover:bg-medical-blue-dark text-white"
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as "active" | "resolved" | "review")}
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                required
               >
-                {createCaseMutation.isPending ? "Creating..." : "Create Case"}
+                <option value="active">Active</option>
+                <option value="resolved">Resolved</option>
+                <option value="review">Under Review</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Priority</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as "low" | "normal" | "high" | "urgent")}
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                required
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Patient Age</label>
+              <Input
+                type="text"
+                value={patientAge}
+                onChange={(e) => setPatientAge(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Patient Gender</label>
+              <select
+                value={patientGender}
+                onChange={(e) => setPatientGender(e.target.value as "male" | "female" | "other")}
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                required
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Tags</label>
+            <div className="flex gap-2 mb-2">
+              <Input
+                value={currentTag}
+                onChange={(e) => setCurrentTag(e.target.value)}
+                placeholder="Add tags"
+                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
+              />
+              <Button type="button" onClick={handleAddTag}>
+                Add
               </Button>
             </div>
-          </form>
-        </Form>
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag: string) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="cursor-pointer"
+                  onClick={() => handleRemoveTag(tag)}
+                >
+                  {tag} ×
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Attachments</label>
+            <Input
+              type="file"
+              onChange={handleFileChange}
+              multiple
+              accept="image/*,.pdf,.doc,.docx"
+            />
+            {attachments.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {attachments.map((file) => (
+                  <div key={file.name} className="text-sm text-muted-foreground">
+                    {file.name} ({Math.round(file.size / 1024)} KB)
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              Create Case
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

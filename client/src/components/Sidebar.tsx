@@ -1,82 +1,110 @@
+import { Link, useLocation } from "wouter";
+import { Home, Star, Users, FileText, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Stethoscope, Home, FileText, Users, Star, Search, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
+import type { User } from "../shared/schema";
 
-export default function Sidebar() {
-  const { user } = useAuth();
-  const [location, setLocation] = useLocation();
+interface SidebarProps {
+  className?: string;
+}
 
-  const menuItems = [
-    { icon: Home, label: "Dashboard", href: "/" },
-    { icon: FileText, label: "My Cases", href: "/my-cases" },
-    { icon: Users, label: "Colleagues", href: "/colleagues" },
-    { icon: Star, label: "Featured Cases", href: "/featured" },
-    { icon: Bell, label: "Notifications", href: "/notifications", badge: 3 },
-  ];
+interface NavItem {
+  title: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+const navItems: NavItem[] = [
+  {
+    title: "Home",
+    href: "/",
+    icon: Home,
+  },
+  {
+    title: "Featured",
+    href: "/featured",
+    icon: Star,
+  },
+  {
+    title: "My Cases",
+    href: "/my-cases",
+    icon: FileText,
+  },
+  {
+    title: "Colleagues",
+    href: "/colleagues",
+    icon: Users,
+  },
+];
+
+export default function Sidebar({ className }: SidebarProps) {
+  const [location] = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
-    <aside className="w-64 bg-white dark:bg-card shadow-sm border-r border-slate-200 dark:border-border flex flex-col">
-      {/* Logo Header */}
-      <div className="p-6 border-b border-slate-200 dark:border-border">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-medical-blue rounded-lg flex items-center justify-center">
-            <Stethoscope className="text-white text-lg" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-foreground">MedCase</h1>
-            <p className="text-sm text-slate-500 dark:text-muted-foreground">Clinical Connect</p>
+    <div
+      className={cn(
+        "flex flex-col w-64 bg-white dark:bg-card border-r border-slate-200 dark:border-border",
+        className
+      )}
+    >
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-medical-blue">
+          ClinicalCaseHub
+        </h1>
+      </div>
+
+      {user && (
+        <div className="px-6 py-4 border-y border-slate-200 dark:border-border">
+          <div className="flex items-center gap-3">
+            <img
+              src={user.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&background=2563eb&color=fff`}
+              alt={`${user.firstName} ${user.lastName}`}
+              className="w-10 h-10 rounded-full"
+            />
+            <div>
+              <p className="font-medium text-slate-900 dark:text-foreground">
+                Dr. {user.firstName} {user.lastName}
+              </p>
+              <p className="text-sm text-slate-600 dark:text-muted-foreground">
+                {user.specialty}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Navigation Menu */}
-      <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => (
-          <Button
-            key={item.label}
-            variant={location === item.href ? "default" : "ghost"}
-            className={`w-full justify-start ${
-              location === item.href
-                ? "bg-medical-blue text-white hover:bg-medical-blue-dark" 
-                : "text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground hover:bg-slate-50 dark:hover:bg-muted"
-            }`}
-            onClick={() => setLocation(item.href)}
-          >
-            <item.icon className="w-5 h-5 mr-3" />
-            <span>{item.label}</span>
-            {item.badge && (
-              <span className="ml-auto bg-medical-error text-white text-xs px-2 py-1 rounded-full">
-                {item.badge}
-              </span>
-            )}
-          </Button>
-        ))}
+      <nav className="flex-1 p-4">
+        <ul className="space-y-1">
+          {navItems.map((item) => (
+            <li key={item.href}>
+              <Link href={item.href}>
+                <a
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                    location === item.href
+                      ? "bg-medical-blue text-white"
+                      : "text-slate-600 dark:text-muted-foreground hover:bg-slate-100 dark:hover:bg-accent"
+                  )}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.title}
+                </a>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </nav>
 
-      {/* User Profile Section */}
-      <div className="p-4 border-t border-slate-200 dark:border-border">
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start p-3 hover:bg-slate-50 dark:hover:bg-muted"
-          onClick={() => window.location.href = '/api/logout'}
+      <div className="p-4 mt-auto border-t border-slate-200 dark:border-border">
+        <button
+          onClick={signOut}
+          className="flex items-center gap-3 w-full px-4 py-2 text-sm font-medium text-slate-600 dark:text-muted-foreground hover:bg-slate-100 dark:hover:bg-accent rounded-lg transition-colors"
         >
-          <img 
-            src={user?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.firstName + ' ' + user?.lastName || 'User')}&background=2563eb&color=fff`}
-            alt={`${user?.firstName} ${user?.lastName}` || 'User'}
-            className="w-10 h-10 rounded-full object-cover mr-3" 
-          />
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-medium text-slate-900 dark:text-foreground truncate">
-              Dr. {user?.firstName} {user?.lastName}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-muted-foreground truncate">
-              {user?.specialty || 'General Medicine'}
-            </p>
-          </div>
-          <i className="fas fa-chevron-right text-slate-400 text-xs ml-2"></i>
-        </Button>
+          <LogOut className="w-5 h-5" />
+          Sign Out
+        </button>
       </div>
-    </aside>
+    </div>
   );
 }

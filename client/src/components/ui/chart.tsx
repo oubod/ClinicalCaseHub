@@ -18,21 +18,46 @@ export type ChartConfig = {
   )
 }
 
-type ChartContextProps = {
-  config: ChartConfig
-}
-
-const ChartContext = React.createContext<ChartContextProps | null>(null)
+const ChartContext = React.createContext<{ config: ChartConfig }>({
+  config: {},
+})
 
 function useChart() {
   const context = React.useContext(ChartContext)
-
   if (!context) {
-    throw new Error("useChart must be used within a <ChartContainer />")
+    throw new Error("useChart must be used within a ChartContainer")
   }
-
   return context
 }
+
+const ChartStyle = React.memo(
+  ({ id, config }: { id: string; config: ChartConfig }) => {
+    const styles = Object.entries(config).map(([key, value]) => {
+      if ("theme" in value && value.theme) {
+        return Object.entries(value.theme).map(
+          ([theme, color]) => `
+            ${THEMES[theme as keyof typeof THEMES]} [data-chart="${id}"] [data-chart-item="${key}"] {
+              color: ${color};
+              fill: ${color};
+              stroke: ${color};
+            }
+          `
+        )
+      }
+
+      return `
+        [data-chart="${id}"] [data-chart-item="${key}"] {
+          color: ${value.color};
+          fill: ${value.color};
+          stroke: ${value.color};
+        }
+      `
+    })
+
+    return <style>{styles}</style>
+  }
+)
+ChartStyle.displayName = "ChartStyle"
 
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
@@ -66,39 +91,6 @@ const ChartContainer = React.forwardRef<
   )
 })
 ChartContainer.displayName = "Chart"
-
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme || config.color
-  )
-
-  if (!colorConfig.length) {
-    return null
-  }
-
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
-      }}
-    />
-  )
-}
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
@@ -362,4 +354,5 @@ export {
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  useChart,
 }

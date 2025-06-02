@@ -2,20 +2,20 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import CaseCard from "@/components/CaseCard";
-import CaseDetailsModal from "@/components/CaseDetailsModal";
+import { CaseCard } from "@/components/CaseCard";
+import { CaseDetailsModal } from "@/components/CaseDetailsModal";
 import { Badge } from "@/components/ui/badge";
 import { Star, TrendingUp, Users, Clock } from "lucide-react";
-import type { CaseWithAuthor } from "@shared/schema";
+import type { CaseWithAuthor } from "../shared/schema";
 
 export default function Featured() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [selectedCase, setSelectedCase] = useState<number | null>(null);
+  const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCaseModal, setShowCaseModal] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -61,6 +61,11 @@ export default function Featured() {
     )
   );
 
+  const onCaseClick = (id: string) => {
+    setSelectedCase(id);
+    setShowCaseModal(true);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-background">
@@ -105,7 +110,7 @@ export default function Featured() {
               <CasesGrid 
                 cases={filteredCases}
                 loading={casesLoading}
-                onCaseClick={setSelectedCase}
+                onCaseClick={onCaseClick}
                 emptyMessage={`No cases found matching "${searchQuery}"`}
               />
             </div>
@@ -128,7 +133,7 @@ export default function Featured() {
                   <CasesGrid 
                     cases={featuredCases}
                     loading={casesLoading}
-                    onCaseClick={setSelectedCase}
+                    onCaseClick={onCaseClick}
                     emptyMessage="No featured cases available"
                   />
                 </div>
@@ -149,7 +154,7 @@ export default function Featured() {
                   <CasesGrid 
                     cases={complexCases.slice(0, 6)}
                     loading={casesLoading}
-                    onCaseClick={setSelectedCase}
+                    onCaseClick={onCaseClick}
                     emptyMessage="No complex cases available"
                   />
                 </div>
@@ -170,7 +175,7 @@ export default function Featured() {
                   <CasesGrid 
                     cases={popularCases}
                     loading={casesLoading}
-                    onCaseClick={setSelectedCase}
+                    onCaseClick={onCaseClick}
                     emptyMessage="No popular cases available"
                   />
                 </div>
@@ -191,7 +196,7 @@ export default function Featured() {
                   <CasesGrid 
                     cases={recentCases}
                     loading={casesLoading}
-                    onCaseClick={setSelectedCase}
+                    onCaseClick={onCaseClick}
                     emptyMessage="No recent cases available"
                   />
                 </div>
@@ -203,9 +208,9 @@ export default function Featured() {
 
       {selectedCase && (
         <CaseDetailsModal
+          open={showCaseModal}
+          onOpenChange={setShowCaseModal}
           caseId={selectedCase}
-          open={!!selectedCase}
-          onOpenChange={(open) => !open && setSelectedCase(null)}
         />
       )}
     </div>
@@ -215,7 +220,7 @@ export default function Featured() {
 interface CasesGridProps {
   cases: CaseWithAuthor[];
   loading: boolean;
-  onCaseClick: (id: number) => void;
+  onCaseClick: (id: string) => void;
   emptyMessage: string;
 }
 
@@ -258,7 +263,7 @@ function CasesGrid({ cases, loading, onCaseClick, emptyMessage }: CasesGridProps
       {cases.map((caseData) => (
         <CaseCard
           key={caseData.id}
-          case={caseData}
+          caseData={caseData}
           onClick={() => onCaseClick(caseData.id)}
         />
       ))}

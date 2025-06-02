@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -6,11 +7,14 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import FiltersBar from "@/components/FiltersBar";
-import CaseCard from "@/components/CaseCard";
-import CreateCaseModal from "@/components/CreateCaseModal";
-import CaseDetailsModal from "@/components/CaseDetailsModal";
+import { CaseCard } from "@/components/CaseCard";
+import { CreateCaseModal } from "@/components/CreateCaseModal";
+import { CaseDetailsModal } from "@/components/CaseDetailsModal";
 import { Button } from "@/components/ui/button";
-import type { CaseWithAuthor } from "@shared/schema";
+import type { CaseWithAuthor } from "../shared/schema";
+import { insertCaseSchema } from "../shared/schema";
+import { z } from "zod";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Home() {
   const { toast } = useToast();
@@ -21,7 +25,9 @@ export default function Home() {
     search: "",
   });
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedCase, setSelectedCase] = useState<number | null>(null);
+  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const [showCaseModal, setShowCaseModal] = useState(false);
+  const queryClient = useQueryClient();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -67,6 +73,40 @@ export default function Home() {
       }, 500);
     }
   }, [error, toast]);
+
+  const onCaseClick = (id: string) => {
+    setSelectedCase(id);
+    setShowCaseModal(true);
+  };
+
+  const handleCreateCase = async (data: z.infer<typeof insertCaseSchema>) => {
+    try {
+      const response = await fetch('/api/cases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create case');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['cases'] });
+      setShowCreateModal(false);
+      toast({
+        title: 'Success',
+        description: 'Case created successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create case',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -150,8 +190,8 @@ export default function Home() {
                 {cases.map((caseData) => (
                   <CaseCard
                     key={caseData.id}
-                    case={caseData}
-                    onClick={() => setSelectedCase(caseData.id)}
+                    caseData={caseData}
+                    onClick={() => onCaseClick(caseData.id)}
                   />
                 ))}
               </div>
@@ -170,15 +210,16 @@ export default function Home() {
       </main>
 
       <CreateCaseModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateCase}
       />
 
       {selectedCase && (
         <CaseDetailsModal
+          open={showCaseModal}
+          onOpenChange={setShowCaseModal}
           caseId={selectedCase}
-          open={!!selectedCase}
-          onOpenChange={(open) => !open && setSelectedCase(null)}
         />
       )}
     </div>

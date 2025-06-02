@@ -1,23 +1,28 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import CaseCard from "@/components/CaseCard";
-import CreateCaseModal from "@/components/CreateCaseModal";
-import CaseDetailsModal from "@/components/CaseDetailsModal";
+import { CaseCard } from "@/components/CaseCard";
+import { CreateCaseModal } from "@/components/CreateCaseModal";
+import { CaseDetailsModal } from "@/components/CaseDetailsModal";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, TrendingUp, CheckCircle } from "lucide-react";
-import type { CaseWithAuthor } from "@shared/schema";
+import type { CaseWithAuthor } from "../shared/schema";
+import { insertCaseSchema } from "../shared/schema";
+import { z } from "zod";
 
 export default function MyCases() {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedCase, setSelectedCase] = useState<number | null>(null);
+  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const [showCaseModal, setShowCaseModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Redirect to home if not authenticated
@@ -57,6 +62,40 @@ export default function MyCases() {
     caseData.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     caseData.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const onCaseClick = (id: string) => {
+    setSelectedCase(id);
+    setShowCaseModal(true);
+  };
+
+  const handleCreateCase = async (data: z.infer<typeof insertCaseSchema>) => {
+    try {
+      const response = await fetch('/api/cases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create case');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['cases'] });
+      setShowCreateModal(false);
+      toast({
+        title: 'Success',
+        description: 'Case created successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create case',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -144,7 +183,7 @@ export default function MyCases() {
               <CasesGrid 
                 cases={searchQuery ? filteredCases : myCases}
                 loading={casesLoading}
-                onCaseClick={setSelectedCase}
+                onCaseClick={onCaseClick}
                 onCreateCase={() => setShowCreateModal(true)}
                 emptyMessage="You haven't created any cases yet."
               />
@@ -154,7 +193,7 @@ export default function MyCases() {
               <CasesGrid 
                 cases={myActiveCases}
                 loading={casesLoading}
-                onCaseClick={setSelectedCase}
+                onCaseClick={onCaseClick}
                 onCreateCase={() => setShowCreateModal(true)}
                 emptyMessage="No active cases. Create your first case to get started!"
               />
@@ -164,7 +203,7 @@ export default function MyCases() {
               <CasesGrid 
                 cases={myResolvedCases}
                 loading={casesLoading}
-                onCaseClick={setSelectedCase}
+                onCaseClick={onCaseClick}
                 onCreateCase={() => setShowCreateModal(true)}
                 emptyMessage="No resolved cases yet."
               />
@@ -174,15 +213,16 @@ export default function MyCases() {
       </main>
 
       <CreateCaseModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateCase}
       />
 
       {selectedCase && (
         <CaseDetailsModal
+          open={showCaseModal}
+          onOpenChange={setShowCaseModal}
           caseId={selectedCase}
-          open={!!selectedCase}
-          onOpenChange={(open) => !open && setSelectedCase(null)}
         />
       )}
     </div>
@@ -192,7 +232,7 @@ export default function MyCases() {
 interface CasesGridProps {
   cases: CaseWithAuthor[];
   loading: boolean;
-  onCaseClick: (id: number) => void;
+  onCaseClick: (id: string) => void;
   onCreateCase: () => void;
   emptyMessage: string;
 }
@@ -242,7 +282,7 @@ function CasesGrid({ cases, loading, onCaseClick, onCreateCase, emptyMessage }: 
       {cases.map((caseData) => (
         <CaseCard
           key={caseData.id}
-          case={caseData}
+          caseData={caseData}
           onClick={() => onCaseClick(caseData.id)}
         />
       ))}

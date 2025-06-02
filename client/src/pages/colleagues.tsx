@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Search, MessageCircle, FileText } from "lucide-react";
-import type { User } from "@shared/schema";
+import type { User } from "../shared/schema";
 
 export default function Colleagues() {
   const { toast } = useToast();
@@ -43,8 +43,8 @@ export default function Colleagues() {
       department: "Cardiovascular Medicine",
       bio: "Interventional cardiologist with expertise in complex coronary procedures and structural heart disease.",
       profileImageUrl: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     },
     {
       id: "2", 
@@ -57,8 +57,8 @@ export default function Colleagues() {
       department: "Neurosciences",
       bio: "Neurologist specializing in stroke care and neurocritical care medicine.",
       profileImageUrl: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     },
     {
       id: "3",
@@ -71,8 +71,8 @@ export default function Colleagues() {
       department: "Emergency Department",
       bio: "Emergency physician with focus on trauma care and critical care medicine.",
       profileImageUrl: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     },
   ];
 
