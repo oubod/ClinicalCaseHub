@@ -68,7 +68,7 @@ export default function Signup() {
       } else {
         toast({
           title: "Success",
-          description: "Account created! Please check your email to verify your account.",
+          description: "Account created successfully! You can now log in.",
         })
         setLocation('/login')
       }
