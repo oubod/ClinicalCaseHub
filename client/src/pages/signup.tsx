@@ -42,40 +42,62 @@ export default function Signup() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isLoading) return
     setIsLoading(true)
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
+      // 1. Create the auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email.trim(),
         password: formData.password,
         options: {
           data: {
             first_name: formData.firstName,
-            last_name: formData.lastName,
-            specialty: formData.specialty,
-            hospital: formData.hospital,
-            department: formData.department
+            last_name: formData.lastName
           }
         }
       })
 
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "Success",
-          description: "Account created successfully! You can now log in.",
-        })
-        setLocation('/login')
+      if (authError) {
+        throw authError
       }
+
+      if (!authData.user) {
+        throw new Error('No user data returned from signup')
+      }
+
+      // 2. Create the user profile in the users table
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email: formData.email.trim(),
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          specialty: formData.specialty,
+          hospital: formData.hospital,
+          department: formData.department,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+
+      if (profileError) {
+        // If profile creation fails, clean up the auth user
+        await supabase.auth.signOut()
+        throw profileError
+      }
+
+      toast({
+        title: "Success",
+        description: "Account created successfully! You can now log in.",
+      })
+      setLocation('/login')
+      
     } catch (error) {
+      console.error('Signup error:', error)
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       })
     } finally {

@@ -17,49 +17,49 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Login attempt started...")
+    if (isLoading) return // Prevent multiple submissions
     setIsLoading(true)
 
     try {
-      console.log("Calling Supabase signInWithPassword...")
+      // Clear any previous error toasts
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       })
 
-      console.log("Supabase call returned.")
-      console.log("Raw error object from Supabase:", error)
-      console.log("Raw data object from Supabase:", data)
-
       if (error) {
-        console.error("Supabase login error:", error.message)
         toast({
           title: "Error",
           description: error.message,
           variant: "destructive",
         })
-      } else {
-        if (data && data.user) {
-          console.log("Login successful, user data:", data.user)
-        } else {
-          console.warn("Login reported success by Supabase, but no user data found in response:", data)
-        }
-        toast({
-          title: "Success",
-          description: "Logged in successfully",
-        })
-        setLocation('/')
-        console.log("Redirecting to / ")
+        return
       }
+
+      if (!data?.user) {
+        toast({
+          title: "Error",
+          description: "No user data received",
+          variant: "destructive",
+        })
+        return
+      }
+
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+      })
+
+      // Redirect to home page
+      setLocation('/')
+
     } catch (err) {
-      console.error("Catch block error:", err)
       toast({
         title: "Error",
         description: err instanceof Error ? err.message : "An unexpected error occurred",
         variant: "destructive",
       })
     } finally {
-      console.log("Finally block: setting isLoading to false.")
       setIsLoading(false)
     }
   }
@@ -92,9 +92,11 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -106,6 +108,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>

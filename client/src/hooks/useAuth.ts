@@ -8,43 +8,81 @@ export function useAuth() {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        setUser(userData)
-      } else {
-        setUser(null)
-      }
-      setIsLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
         if (session?.user) {
-          const { data: userData } = await supabase
+          const { data: userData, error } = await supabase
             .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single()
-          setUser(userData)
+            
+          if (error) {
+            console.error('Error fetching user data:', error)
+            setUser(null)
+          } else {
+            setUser(userData)
+          }
         } else {
           setUser(null)
         }
+      } catch (error) {
+        console.error('Error during auth initialization:', error)
+        setUser(null)
+      } finally {
         setIsLoading(false)
+      }
+    }
+
+    initializeAuth()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setIsLoading(true)
+        try {
+          if (session?.user) {
+            const { data: userData, error } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single()
+              
+            if (error) {
+              console.error('Error fetching user data:', error)
+              setUser(null)
+            } else {
+              setUser(userData)
+            }
+          } else {
+            setUser(null)
+          }
+        } catch (error) {
+          console.error('Error during auth state change:', error)
+          setUser(null)
+        } finally {
+          setIsLoading(false)
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
+    try {
+      setIsLoading(true)
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return {
