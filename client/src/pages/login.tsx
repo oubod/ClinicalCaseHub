@@ -27,7 +27,9 @@ export default function Login() {
         password,
       })
 
-      console.log("Supabase response:", { data, error })
+      console.log("Supabase call returned.")
+      console.log("Raw error object from Supabase:", error)
+      console.log("Raw data object from Supabase:", data)
 
       if (error) {
         console.error("Supabase login error:", error.message)
@@ -37,7 +39,11 @@ export default function Login() {
           variant: "destructive",
         })
       } else {
-        console.log("Login successful, user data:", data.user)
+        if (data && data.user) {
+          console.log("Login successful, user data:", data.user)
+        } else {
+          console.warn("Login reported success by Supabase, but no user data found in response:", data)
+        }
         toast({
           title: "Success",
           description: "Logged in successfully",
