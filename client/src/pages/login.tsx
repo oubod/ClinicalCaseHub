@@ -17,34 +17,43 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Login attempt started...")
     setIsLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Calling Supabase signInWithPassword...")
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log("Supabase response:", { data, error })
+
       if (error) {
+        console.error("Supabase login error:", error.message)
         toast({
           title: "Error",
           description: error.message,
           variant: "destructive",
         })
       } else {
+        console.log("Login successful, user data:", data.user)
         toast({
           title: "Success",
           description: "Logged in successfully",
         })
         setLocation('/')
+        console.log("Redirecting to / ")
       }
-    } catch (error) {
+    } catch (err) {
+      console.error("Catch block error:", err)
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: err instanceof Error ? err.message : "An unexpected error occurred",
         variant: "destructive",
       })
     } finally {
+      console.log("Finally block: setting isLoading to false.")
       setIsLoading(false)
     }
   }
