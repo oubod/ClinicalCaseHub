@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Stethoscope, Users, Shield, MessageSquare } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Landing() {
   return (
@@ -24,12 +25,14 @@ export default function Landing() {
             A secure platform for hospital doctors to share complex medical cases, 
             collaborate with colleagues, and advance medical knowledge through discussion.
           </p>
-          <Button 
-            onClick={() => window.location.href = '/api/login'}
-            className="bg-medical-blue hover:bg-medical-blue-dark text-white px-8 py-4 text-lg rounded-lg"
-          >
-            Sign In to Continue
-          </Button>
+          <Link href="/login">
+            <Button 
+              asChild
+              className="bg-medical-blue hover:bg-medical-blue-dark text-white px-8 py-4 text-lg rounded-lg"
+            >
+              <a>Sign In to Continue</a>
+            </Button>
+          </Link>
         </div>
 
         {/* Features Grid */}
@@ -89,13 +92,15 @@ export default function Landing() {
                 Join thousands of healthcare professionals already using MedCase 
                 to improve patient care through collaborative medicine.
               </p>
-              <Button 
-                onClick={() => window.location.href = '/api/login'}
-                variant="secondary"
-                className="bg-white text-medical-blue hover:bg-slate-100 px-6 py-2"
-              >
-                Access Platform
-              </Button>
+              <Link href="/login">
+                <Button 
+                  asChild
+                  variant="secondary"
+                  className="bg-white text-medical-blue hover:bg-slate-100 px-6 py-2"
+                >
+                  <a>Access Platform</a>
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
