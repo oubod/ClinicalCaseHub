@@ -16,6 +16,10 @@ export default defineConfig({
         ]
       : []),
   ],
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': '"https://tjvejsdwneuaevuxpndd.supabase.co"',
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': '"eyJhbGciOiDiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3"'
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
