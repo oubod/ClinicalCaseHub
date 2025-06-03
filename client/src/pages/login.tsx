@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
-import { Link, useLocation } from 'wouter'
+import { Link } from 'wouter'
 import { Stethoscope, Mail, Lock } from 'lucide-react'
 
 export default function Login() {
@@ -13,7 +13,6 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const [, setLocation] = useLocation()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,78 +20,28 @@ export default function Login() {
     setIsLoading(true)
 
     try {
-      console.log('Attempting to sign in...')
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Attempt login
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       })
 
       if (error) {
-        console.error('Login error:', error)
         toast({
           title: "Error",
           description: error.message,
           variant: "destructive",
         })
-        setIsLoading(false)
         return
       }
 
-      if (!data?.user) {
-        console.error('No user data received')
-        toast({
-          title: "Error",
-          description: "No user data received",
-          variant: "destructive",
-        })
-        setIsLoading(false)
-        return
-      }
-
-      // Create user profile if it doesn't exist
-      const { data: existingUser, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .single()
-
-      if (!existingUser && !profileError) {
-        // Create new user profile
-        const { error: createError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: data.user.id,
-              email: data.user.email,
-              firstName: data.user.user_metadata?.first_name || '',
-              lastName: data.user.user_metadata?.last_name || '',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            }
-          ])
-
-        if (createError) {
-          console.error('Error creating user profile:', createError)
-        }
-      }
-
-      // Success! Show toast and redirect
-      toast({
-        title: "Success",
-        description: "Logged in successfully",
-      })
-
-      // Wait a bit for the auth state to update
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Redirect to home page
+      // If successful, redirect to home
       window.location.href = '/'
-
-    } catch (err) {
-      console.error('Unexpected error:', err)
+      
+    } catch (error) {
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "An unexpected error occurred",
+        description: "An unexpected error occurred",
         variant: "destructive",
       })
     } finally {
