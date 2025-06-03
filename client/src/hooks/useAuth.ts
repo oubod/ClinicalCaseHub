@@ -6,33 +6,53 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const fetchUserData = async (userId: string) => {
+    try {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching user data:', error)
+        return null
+      }
+      
+      return userData
+    } catch (error) {
+      console.error('Error in fetchUserData:', error)
+      return null
+    }
+  }
+
   useEffect(() => {
+    let mounted = true
+
     // Get initial session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         
-        if (session?.user) {
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-            
-          if (error) {
-            console.error('Error fetching user data:', error)
-            setUser(null)
-          } else {
+        if (session?.user && mounted) {
+          const userData = await fetchUserData(session.user.id)
+          if (userData && mounted) {
             setUser(userData)
+          } else {
+            setUser(null)
           }
-        } else {
+        } else if (mounted) {
           setUser(null)
         }
       } catch (error) {
         console.error('Error during auth initialization:', error)
-        setUser(null)
+        if (mounted) {
+          setUser(null)
+        }
       } finally {
-        setIsLoading(false)
+        if (mounted) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -40,35 +60,38 @@ export function useAuth() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setIsLoading(true)
+      async (event, session) => {
+        console.log('Auth state changed:', event)
+        if (mounted) {
+          setIsLoading(true)
+        }
+
         try {
-          if (session?.user) {
-            const { data: userData, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single()
-              
-            if (error) {
-              console.error('Error fetching user data:', error)
-              setUser(null)
-            } else {
+          if (session?.user && mounted) {
+            const userData = await fetchUserData(session.user.id)
+            if (userData && mounted) {
               setUser(userData)
+            } else {
+              setUser(null)
             }
-          } else {
+          } else if (mounted) {
             setUser(null)
           }
         } catch (error) {
-          console.error('Error during auth state change:', error)
-          setUser(null)
+          console.error('Error in auth state change:', error)
+          if (mounted) {
+            setUser(null)
+          }
         } finally {
-          setIsLoading(false)
+          if (mounted) {
+            setIsLoading(false)
+          }
         }
       }
     )
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
     }
   }, [])
@@ -76,7 +99,8 @@ export function useAuth() {
   const signOut = async () => {
     try {
       setIsLoading(true)
-      await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
       setUser(null)
     } catch (error) {
       console.error('Error signing out:', error)

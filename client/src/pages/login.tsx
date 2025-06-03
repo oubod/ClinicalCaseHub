@@ -17,31 +17,53 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isLoading) return // Prevent multiple submissions
+    if (isLoading) return
     setIsLoading(true)
 
     try {
-      // Clear any previous error toasts
+      console.log('Attempting to sign in...')
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       })
 
       if (error) {
+        console.error('Login error:', error)
         toast({
           title: "Error",
           description: error.message,
           variant: "destructive",
         })
+        setIsLoading(false)
         return
       }
 
       if (!data?.user) {
+        console.error('No user data received')
         toast({
           title: "Error",
           description: "No user data received",
           variant: "destructive",
         })
+        setIsLoading(false)
+        return
+      }
+
+      // Fetch user profile data
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (userError) {
+        console.error('Error fetching user data:', userError)
+        toast({
+          title: "Error",
+          description: "Failed to fetch user profile",
+          variant: "destructive",
+        })
+        setIsLoading(false)
         return
       }
 
@@ -54,6 +76,7 @@ export default function Login() {
       setLocation('/')
 
     } catch (err) {
+      console.error('Unexpected error:', err)
       toast({
         title: "Error",
         description: err instanceof Error ? err.message : "An unexpected error occurred",
