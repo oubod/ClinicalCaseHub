@@ -18,7 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export default function Home() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [filters, setFilters] = useState({
     specialty: "All Specialties",
     status: "All Status",
@@ -29,20 +29,13 @@ export default function Home() {
   const [showCaseModal, setShowCaseModal] = useState(false);
   const queryClient = useQueryClient();
 
-  // Redirect to home if not authenticated
+  // Redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 500);
-      return;
+      console.log('Not authenticated, redirecting to login...');
+      window.location.href = '/login';
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [isAuthenticated, isLoading]);
 
   const { data: cases = [], isLoading: casesLoading, error } = useQuery({
     queryKey: ["/api/cases", filters],
@@ -108,21 +101,13 @@ export default function Home() {
     }
   };
 
-  if (isLoading) {
+  // Don't render anything while loading or if not authenticated
+  if (isLoading || !isAuthenticated || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-background">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-medical-blue rounded-lg flex items-center justify-center mx-auto mb-4">
-            <i className="fas fa-stethoscope text-white text-2xl"></i>
-          </div>
-          <p className="text-slate-600 dark:text-muted-foreground">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null; // Will redirect via useEffect
   }
 
   return (

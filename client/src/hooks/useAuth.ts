@@ -5,6 +5,7 @@ import type { User } from '../shared/schema'
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [authInitialized, setAuthInitialized] = useState(false)
 
   const fetchUserData = async (userId: string) => {
     try {
@@ -29,19 +30,25 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true
 
-    // Get initial session
     const initializeAuth = async () => {
       try {
+        setIsLoading(true)
+        // Get initial session
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user && mounted) {
+          console.log('Session found, fetching user data...')
           const userData = await fetchUserData(session.user.id)
           if (userData && mounted) {
+            console.log('User data fetched successfully')
             setUser(userData)
           } else {
+            console.log('No user data found, clearing session')
             setUser(null)
+            await supabase.auth.signOut()
           }
         } else if (mounted) {
+          console.log('No session found')
           setUser(null)
         }
       } catch (error) {
@@ -52,6 +59,7 @@ export function useAuth() {
       } finally {
         if (mounted) {
           setIsLoading(false)
+          setAuthInitialized(true)
         }
       }
     }
@@ -62,26 +70,28 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event)
-        if (mounted) {
-          setIsLoading(true)
-        }
+        if (!mounted) return
+
+        setIsLoading(true)
 
         try {
-          if (session?.user && mounted) {
+          if (session?.user) {
+            console.log('Session exists, fetching user data...')
             const userData = await fetchUserData(session.user.id)
             if (userData && mounted) {
+              console.log('User data updated')
               setUser(userData)
             } else {
+              console.log('No user data found')
               setUser(null)
             }
-          } else if (mounted) {
+          } else {
+            console.log('No session exists')
             setUser(null)
           }
         } catch (error) {
           console.error('Error in auth state change:', error)
-          if (mounted) {
-            setUser(null)
-          }
+          setUser(null)
         } finally {
           if (mounted) {
             setIsLoading(false)
@@ -99,9 +109,9 @@ export function useAuth() {
   const signOut = async () => {
     try {
       setIsLoading(true)
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      await supabase.auth.signOut()
       setUser(null)
+      window.location.href = '/login'
     } catch (error) {
       console.error('Error signing out:', error)
     } finally {
@@ -112,7 +122,7 @@ export function useAuth() {
   return {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && authInitialized,
     signOut
   }
 }

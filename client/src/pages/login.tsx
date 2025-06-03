@@ -49,31 +49,44 @@ export default function Login() {
         return
       }
 
-      // Fetch user profile data
-      const { data: userData, error: userError } = await supabase
+      // Create user profile if it doesn't exist
+      const { data: existingUser, error: profileError } = await supabase
         .from('users')
         .select('*')
         .eq('id', data.user.id)
         .single()
 
-      if (userError) {
-        console.error('Error fetching user data:', userError)
-        toast({
-          title: "Error",
-          description: "Failed to fetch user profile",
-          variant: "destructive",
-        })
-        setIsLoading(false)
-        return
+      if (!existingUser && !profileError) {
+        // Create new user profile
+        const { error: createError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: data.user.id,
+              email: data.user.email,
+              firstName: data.user.user_metadata?.first_name || '',
+              lastName: data.user.user_metadata?.last_name || '',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ])
+
+        if (createError) {
+          console.error('Error creating user profile:', createError)
+        }
       }
 
+      // Success! Show toast and redirect
       toast({
         title: "Success",
         description: "Logged in successfully",
       })
 
+      // Wait a bit for the auth state to update
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       // Redirect to home page
-      setLocation('/')
+      window.location.href = '/'
 
     } catch (err) {
       console.error('Unexpected error:', err)
