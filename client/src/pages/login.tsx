@@ -51,14 +51,7 @@ export default function Login() {
         description: "Logged in successfully",
       })
 
-      // Wait for session to be established
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Update the auth store
-      await supabase.auth.getSession()
-
-      // Navigate to home page
-      setLocation('/')
+      // The navigation will happen automatically through the onAuthStateChange listener in useAuth
       
     } catch (error) {
       console.error('Login error:', error)

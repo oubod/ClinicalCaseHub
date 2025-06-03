@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { useLocation } from 'wouter'
 
 export function useAuth() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [, setLocation] = useLocation()
 
   useEffect(() => {
     let mounted = true
@@ -38,11 +40,11 @@ export function useAuth() {
 
           // If logged out, redirect to login
           if (event === 'SIGNED_OUT') {
-            window.location.href = '/login'
+            setLocation('/login')
           }
           // If signed in, make sure we're not on login/signup pages
           else if (event === 'SIGNED_IN' && (window.location.pathname === '/login' || window.location.pathname === '/signup')) {
-            window.location.href = '/'
+            setLocation('/')
           }
         }
       }
