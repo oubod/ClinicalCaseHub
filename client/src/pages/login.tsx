@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
-import { Link } from 'wouter'
+import { Link, useLocation } from 'wouter'
 import { Stethoscope, Mail, Lock } from 'lucide-react'
 
 export default function Login() {
@@ -13,6 +13,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const [, setLocation] = useLocation()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,7 +22,7 @@ export default function Login() {
 
     try {
       // Attempt login
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       })
@@ -35,10 +36,32 @@ export default function Login() {
         return
       }
 
-      // If successful, force a full reload to ensure session is picked up
-      window.location.replace('/')
+      if (!data.session) {
+        toast({
+          title: "Error",
+          description: "Failed to establish session",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Success! Show toast
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+      })
+
+      // Wait for session to be established
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Update the auth store
+      await supabase.auth.getSession()
+
+      // Navigate to home page
+      setLocation('/')
       
     } catch (error) {
+      console.error('Login error:', error)
       toast({
         title: "Error",
         description: "An unexpected error occurred",
