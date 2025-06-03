@@ -35,8 +35,8 @@ export default function Login() {
         return
       }
 
-      // If successful, redirect to home
-      window.location.href = '/'
+      // If successful, force a full reload to ensure session is picked up
+      window.location.replace('/')
       
     } catch (error) {
       toast({
